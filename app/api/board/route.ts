@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { WorkSpace } from "@/models/Workspace";
 import { Board } from "@/models/Board";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { List } from "@/models/List";
 
 export async function POST(req: Request) {
   try {
@@ -81,8 +82,14 @@ export async function POST(req: Request) {
       members: [],
     });
 
-   revalidateTag(`workSpace-${workSpaceId}`);
-   revalidatePath('/dashboard?workspace=' + workSpaceId);
+    revalidateTag(`workSpace-${workSpaceId}`);
+    revalidatePath("/dashboard?workspace=" + workSpaceId);
+
+    await List.create([
+      { name: "To Do", boardId: board._id, position: 0 },
+      { name: "In Progress", boardId: board._id, position: 1 },
+      { name: "Done", boardId: board._id, position: 2 },
+    ]);
 
     return NextResponse.json(
       {

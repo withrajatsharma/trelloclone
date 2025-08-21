@@ -5,7 +5,7 @@ import Button from "./Button";
 import LoadingButton from "./LoadingButton";
 import { customToast } from "./CustomToast";
 import axios from "axios";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const WorkSpaceContent = ({ workSpace }) => {
@@ -23,13 +23,12 @@ const WorkSpaceContent = ({ workSpace }) => {
     setName(workSpace?.name || "");
   }, [workSpace, workSpaceId]);
 
-  const handleSave = () => {
-    if (name.trim() === "") return;
-    onRename(name.trim());
-    setIsEditing(false);
-  };
+
+
 
   const [isLoading, setIsLoading] = useState(false);
+
+  const router = useRouter();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
@@ -72,6 +71,48 @@ const WorkSpaceContent = ({ workSpace }) => {
     }
   };
 
+
+    const handleSave = async() => {
+    if (name.trim() === "" || name.trim() === workSpace?.name) return;
+
+    if(isLoading) return;
+
+    setIsLoading(true);
+
+    try {
+      const res = await axios.patch(`/api/workspace/`, {
+        name: name.trim(),
+        workSpaceId: workSpaceId,
+      });
+      if (res && res?.data && res?.data?.success) {
+        customToast.success(
+          res?.data?.message || "Workspace updated successfully!"
+        );
+        setName(name.trim());
+        router.refresh();
+        setIsEditing(false);
+      } else {
+        customToast.error(res?.data?.message || "Failed to update Workspace.");
+      }
+    } catch (error) {
+     setIsEditing(false);
+      setName(workSpace?.name || "");
+      console.log("Error updating Workspace:", error?.message);
+      console.log(`error :`, error?.response);
+      customToast.error(
+        error?.response?.data?.message ||
+          "Please try again. (Workspace update error)"
+      );
+    } finally {
+             
+      setIsLoading(false);
+    }
+      
+  };
+
+    
+
+
   const handleCancel = () => {
     if (isLoading) return;
     setNewBoardName("");
@@ -103,7 +144,7 @@ const WorkSpaceContent = ({ workSpace }) => {
               autoFocus
             />
           ) : (
-            <h1 className="text-h2 ">{workSpace?.name}</h1>
+            <h1 className="text-h2 ">{name}</h1>
           )}
 
           {!isEditing ? (
@@ -117,7 +158,9 @@ const WorkSpaceContent = ({ workSpace }) => {
               {isLoading ? (
                 <div className="h-5 w-5 border-2 border-black border-t-transparent rounded-full mr-2 animate-spin" />
               ) : (
-                <Save className=" cursor-pointer text-green-500" size={30} />
+                <Save
+                  onClick={handleSave}
+                className=" cursor-pointer text-green-500" size={30} />
               )}
 
               <X
@@ -132,14 +175,14 @@ const WorkSpaceContent = ({ workSpace }) => {
           )}
         </div>
 
-        <LoadingButton
+        {/* <LoadingButton
           isLoading={isLoading}
           loadingText={"deleting..."}
           className="bg-gradient-to-br from-red-50 to-red-200"
           onClick={() => {}}
         >
           Delete
-        </LoadingButton>
+        </LoadingButton> */}
       </div>
 
       {tab !== "members"? (

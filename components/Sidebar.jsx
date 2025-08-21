@@ -16,7 +16,7 @@ const Sidebar = async () => {
     [`workspaces`],
     {
       revalidate: 3600,
-      tags: ["workspaces"],
+      tags: ["workspaces",`user-workspaces-${userId}`],
     }
   );
   const workspaces = await cachedFunction();

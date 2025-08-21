@@ -21,14 +21,6 @@ export default function SearchInput({
   const lastSearchRef = useRef(initialValue);
   const inputRef = useRef(null);
 
-  // Split pathname into parts
-  const parts = pathname.split("/").filter(Boolean); // removes empty strings
-  const isDashboardWithId = parts.length === 2 && parts[0] === "dashboard";
-
-  if (isDashboardWithId) {
-    return null;
-  }
-
   // Sync local state with URL
   useEffect(() => {
     const urlValue = searchParams.get("search") || "";
