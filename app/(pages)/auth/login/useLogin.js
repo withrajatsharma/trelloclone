@@ -5,7 +5,6 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-
 const EMAIL_PATTERN = /\S+@\S+\.\S+/;
 const OTP_PATTERN = /^\d*$/;
 
@@ -17,7 +16,7 @@ const PASSWORD_REQUIREMENTS = {
     NUMBER: /\d/,
     SPECIAL_CHAR: /[!@#$%^&*(),.?":{}|<>]/,
   },
-} ;
+};
 
 export const useLogin = () => {
   const router = useRouter();
@@ -28,7 +27,6 @@ export const useLogin = () => {
     general: "",
   });
 
-
   const clearErrors = useCallback(() => {
     setErrors({
       email: false,
@@ -36,7 +34,6 @@ export const useLogin = () => {
       general: "",
     });
   }, []);
-
 
   // login -----------------------------------------------------------------------------
 
@@ -89,19 +86,23 @@ export const useLogin = () => {
           general: res?.data?.message,
         }));
       }
-    } catch (err) {
+    } catch (error) {
+      console.log(`Error during login:`, error?.message);
+      console.log(`error :`, error?.response);
+      customToast.error(
+        error?.response?.data?.message || "Please try again. (login error)"
+      );
       setErrors((prev) => ({
         ...prev,
-        general: "Login failed. Please try again.",
+        general:
+          error?.response?.data?.message || "Login failed. Please try again.",
       }));
     } finally {
       setIsLoading(false);
     }
   };
 
-
   // login -----------------------------------------------------------------------------
-
 
   const validateLoginForm = (data) => {
     const errors = {
@@ -131,7 +132,6 @@ export const useLogin = () => {
     return errors;
   };
 
- 
   return {
     // Login
     formData,

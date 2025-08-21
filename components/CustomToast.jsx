@@ -1,9 +1,10 @@
 
 import toast from "react-hot-toast";
 import { CircleAlert, CircleCheck, Loader2, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const baseStyles =
-  "max-w-xs w-full shadow-lg rounded-xl pointer-events-auto  flex bg-[#edebe6] text-gray-800 ";
+  "max-w-xs w-full shadow-lg rounded-xl pointer-events-auto  flex bg-blue-50 text-gray-800 ";
 
 const getToastColors = (type) => {
   switch (type) {
@@ -11,13 +12,13 @@ const getToastColors = (type) => {
       return {
         bg: "",
         text: "",
-        icon: " text-[#edebe6] fill-black",
+        icon: " text-blue-50 fill-black",
       };
     case "error":
       return {
         bg: "",
         text: "",
-        icon: "text-[#edebe6] fill-black",
+        icon: "text-blue-50 fill-black",
       };
     case "loading":
       return {
@@ -66,7 +67,7 @@ const ToastBody = (
       {withClose && (
         <button
           onClick={() => toast.dismiss(t.id)}
-          className="absolute -top-2 -left-2 bg-bg rounded-full shadow p-1 text-white transition"
+          className="absolute -top-2 -left-2 bg-black rounded-full shadow p-1 text-white transition"
           aria-label="Close"
         >
           <X className="w-3.5 h-3.5 " />

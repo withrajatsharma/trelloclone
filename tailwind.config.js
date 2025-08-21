@@ -1,11 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./app/**/*.{js,jsx}",
-    "./components/**/*.{js,jsx}",
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./routes/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-     fontSize: {
+    fontSize: {
       display: [
         "clamp(2.75rem, 4.25vw, 4.5rem)",
         {
@@ -26,8 +28,7 @@ module.exports = {
       xxs: "0.75rem",
     },
     extend: {
-
-          keyframes: {
+      keyframes: {
         "toast-enter": {
           from: {
             opacity: "0",
@@ -56,4 +57,4 @@ module.exports = {
     },
   },
   plugins: [],
-}
+};

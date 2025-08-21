@@ -5,7 +5,6 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-
 const PASSWORD_REQUIREMENTS = {
   MIN_LENGTH: 6,
   PATTERNS: {
@@ -14,11 +13,9 @@ const PASSWORD_REQUIREMENTS = {
     NUMBER: /\d/,
     SPECIAL_CHAR: /[!@#$%^&*(),.?":{}|<>]/,
   },
-} ;
+};
 
 const EMAIL_PATTERN = /\S+@\S+\.\S+/;
-
-
 
 export const useSignup = () => {
   const router = useRouter();
@@ -30,9 +27,6 @@ export const useSignup = () => {
     confirmPassword: false,
     general: "",
   });
-
-
-
 
   const clearErrors = useCallback(() => {
     setErrors({
@@ -56,7 +50,6 @@ export const useSignup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const updateFormData = useCallback((field, value) => {
     clearErrors();
@@ -89,8 +82,7 @@ export const useSignup = () => {
 
         const res = await axios.post("/api/auth/register", formData);
 
-          if (res && res?.data && res?.data?.success) {
-          // setUser(res?.data?.user ?? null);
+        if (res && res?.data && res?.data?.success) {
           router.replace("/dashboard");
           customToast.success(
             res?.data?.message || "Account Created successfully."
@@ -103,13 +95,18 @@ export const useSignup = () => {
             general: res.data?.message,
           }));
         }
-
       } catch (error) {
-        customToast.error("Please try again. (signup error)");
+        console.log(`Error during signup:`, error?.message);
+        console.log(`error :`, error?.response);
+        customToast.error(
+          error?.response?.data?.message || "Please try again. (signup error)"
+        );
 
         setErrors((prev) => ({
           ...prev,
-          general: "Please try again. (signup error)",
+          general:
+            error?.response?.data?.message ||
+            "Please try again. (signup error)",
         }));
       } finally {
         setIsLoading(false);
@@ -119,8 +116,6 @@ export const useSignup = () => {
   );
 
   // signup -----------------------------------------------------------------------------
-
-
 
   const validateForm = (data) => {
     const errors = {

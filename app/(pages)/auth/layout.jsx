@@ -5,7 +5,7 @@ export default function Layout({ children }) {
   return (
     <>
       <header className="select-none px-4">
-        <nav className="px-0 sm:px-6 pb-2 md:pb-0 pt-4 xl:pt-5 flex items-center justify-between">
+        <nav className="px-0 sm:px-6 pb-2 md:pb-0 pt-4 xl:pt-7 flex items-center justify-between">
           <Link
             aria-label="Back to Home"
             href="/"
