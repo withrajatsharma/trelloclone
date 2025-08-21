@@ -1,53 +1,76 @@
-'use client';
-import { Edit, FolderKanban, Plus, X } from 'lucide-react'
-import React, { useState } from 'react'
-import Button from './Button'
-import LoadingButton from './LoadingButton';
+"use client";
+import { Edit, FolderKanban, Plus, Save, Trash, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import Button from "./Button";
+import LoadingButton from "./LoadingButton";
+import { customToast } from "./CustomToast";
+import axios from "axios";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
-const WorkSpaceContent = () => {
+const WorkSpaceContent = ({ workSpace }) => {
 
-    const [isLoading, setIsLoading] = useState(false);
-    
+  const params = useSearchParams();
 
-      const [isModalOpen, setIsModalOpen] = useState(false);
+  const workSpaceId = params.get("workspace") || "";
+  const tab = params.get("tab") || "boards";
+
+
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [name, setName] = useState(workSpace?.name || "");
+  useEffect(() => {
+    setName(workSpace?.name || "");
+  }, [workSpace, workSpaceId]);
+
+  const handleSave = () => {
+    if (name.trim() === "") return;
+    onRename(name.trim());
+    setIsEditing(false);
+  };
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
 
-//   const handleSaveWorkspace = async () => {
-//     if (!newWorkspaceName.trim()) {
-//       customToast.error("Please enter a workspace name.");
-//       return;
-//     }
+  const handelSaveBoard = async () => {
+    if (!newBoardName.trim()) {
+      customToast.error("Please enter a Board name.");
+      return;
+    }
 
-//     if (isLoading) return;
+    if (isLoading) return;
 
-//     setIsLoading(true);
+    setIsLoading(true);
 
-//     try {
-//       const res = await axios.post("/api/workspace", {
-//         name: newWorkspaceName.toLowerCase().trim(),
-//       });
+    try {
+      const res = await axios.post("/api/board", {
+        name: newBoardName.toLowerCase().trim(),
+        workSpaceId: workSpaceId,
+      });
 
-//       if (res && res?.data && res?.data?.success) {
-//         customToast.success(
-//           res?.data?.message || "Workspace created successfully!"
-//         );
-//         setNewWorkspaceName("");
-//         setIsModalOpen(false);
-//         handleWorkspaceClick(res.data.workspace.id);
-//       } else {
-//         customToast.error(res?.data?.message || "Failed to create workspace.");
-//       }
-//     } catch (error) {
-//       console.log("Error saving workspace:", error?.message);
-//       console.log(`error :`, error?.response);
-//       customToast.error(
-//         error?.response?.data?.message ||
-//           "Please try again. (workspace creation error)"
-//       );
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
+      if (res && res?.data && res?.data?.success) {
+        customToast.success(
+          res?.data?.message || "Board created successfully!"
+        );
+        setNewBoardName("");
+        setIsModalOpen(false);
+        // handleBoardClick(res.data.workspace.id);
+      } else {
+        customToast.error(res?.data?.message || "Failed to create Board.");
+      }
+    } catch (error) {
+      console.log("Error saving Board:", error?.message);
+      console.log(`error :`, error?.response);
+      customToast.error(
+        error?.response?.data?.message ||
+          "Please try again. (Board creation error)"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCancel = () => {
     if (isLoading) return;
@@ -58,20 +81,68 @@ const WorkSpaceContent = () => {
   const clearInput = () => setNewBoardName("");
 
   return (
-     <section className=" w-full  ">
+    <section className=" w-[70%]  ">
+      <div className="flex justify-between items-center w-full gap-5 pb-10 ">
+        {isLoading && (
+          <div
+            className="fixed inset-0 bg-transparent bg-opacity-50 z-40 flex items-center justify-center "
+            onClick={handleCancel}
+          ></div>
+        )}
 
-        <div className="flex justify-between items-center w-full gap-5 pb-10">
-
-        <div className="flex items-center  gap-5 pl-10 relative w-fit">
+        <div className="flex items-center gap-5 pl-10 w-fit relative ">
           <FolderKanban size={50} />
-          <h1 className="text-h2 ">Testing</h1>
-          <Edit className="absolute -right-8 top-2 cursor-pointer" size={20} />
+
+          {isEditing ? (
+            <input
+              className="text-h2 font-semibold border-none outline-none underline "
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={handleSave}
+              onKeyDown={(e) => e.key === "Enter" && handleSave()}
+              autoFocus
+            />
+          ) : (
+            <h1 className="text-h2 ">{workSpace?.name}</h1>
+          )}
+
+          {!isEditing ? (
+            <Edit
+              className="absolute -right-8 top-2 cursor-pointer"
+              size={20}
+              onClick={() => setIsEditing(true)}
+            />
+          ) : (
+            <div>
+              {isLoading ? (
+                <div className="h-5 w-5 border-2 border-black border-t-transparent rounded-full mr-2 animate-spin" />
+              ) : (
+                <Save className=" cursor-pointer text-green-500" size={30} />
+              )}
+
+              <X
+                className=" cursor-pointer text-black"
+                size={30}
+                onClick={() => {
+                  setIsEditing(false);
+                  setName("Testing");
+                }}
+              />
+            </div>
+          )}
         </div>
 
-        <Button className={"bg-gradient-to-br from-red-50 to-red-200"}>Delete</Button>
+        <LoadingButton
+          isLoading={isLoading}
+          loadingText={"deleting..."}
+          className="bg-gradient-to-br from-red-50 to-red-200"
+          onClick={() => {}}
+        >
+          Delete
+        </LoadingButton>
+      </div>
 
-        </div>
-
+      {tab !== "members"? (
         <div
           className={
             "grid gap-4 transition-all duration-300 grid-cols-2 md:grid-cols-3 xl:grid-cols-4 w-full  h-[75vh] overflow-auto pb-20 hide-scrollbar"
@@ -79,26 +150,63 @@ const WorkSpaceContent = () => {
         >
           <div
             onClick={() => setIsModalOpen(true)}
-          className="flex cursor-pointer flex-col gap-4 p-4 h-32 w-full rounded-lg bg-gray-200 hover:bg-gray-300 transition-all duration-300">
+            className="flex cursor-pointer flex-col gap-4 p-4 h-32 w-full rounded-lg bg-gray-200 hover:bg-gray-300 transition-all duration-300"
+          >
             <div className="flex flex-col gap-2 items-center justify-center w-full h-full">
               <Plus />
               <span>Create New Board</span>
             </div>
           </div>
 
-          {Array.from({ length: 25 }).map((_, i) => (
-            <div
+          {workSpace?.boards?.map((board, i) => (
+            <Link
+              href={`/dashboard/${board._id}`}
               key={i}
               className="flex flex-col cursor-pointer h-32 gap-4 p-4 rounded-lg bg-blue-200 hover:bg-blue-300 transition-all duration-300"
             >
               <div className="flex items-center justify-center h-full">
-                <p>Board</p>
+                <p>{board.name}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ):
+      
+
+      <div
+          className={
+            " w-full  h-[75vh] overflow-auto pb-20 hide-scrollbar"
+          }
+        >
+
+           <div
+            onClick={() => setIsModalOpen(true)}
+            className="flex cursor-pointer flex-col h-10 gap-4 p-4 mb-4  w-full rounded-lg bg-gray-200 hover:bg-gray-300 transition-all duration-300"
+          >
+            <div className="flex  gap-2 items-center justify-center w-full h-full">
+              <Plus />
+              <span>Invite Member</span>
+            </div>
+          </div>
+         
+
+          {workSpace?.members?.map((member, i) => (
+            <div
+              key={i}
+              className="flex flex-col  h-10 gap-4 p-4 rounded-lg bg-blue-100 transition-all duration-300"
+            >
+              <div className="flex items-center justify-between h-full">
+                <p>{member.fullName}</p>
+                {member?._id !== workSpace?.ownerId && <Trash size={20} className="text-red-400 cursor-pointer" />}
               </div>
             </div>
           ))}
         </div>
 
-  {isModalOpen && (
+
+      }
+
+      {isModalOpen && (
         <>
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center "
@@ -138,7 +246,7 @@ const WorkSpaceContent = () => {
                 <LoadingButton
                   isLoading={isLoading}
                   loadingText={"saving..."}
-                //   onClick={handleSaveWorkspace}
+                  onClick={handelSaveBoard}
                   className=" !text-sm"
                 >
                   Save
@@ -148,10 +256,8 @@ const WorkSpaceContent = () => {
           </div>
         </>
       )}
+    </section>
+  );
+};
 
-
-      </section>
-  )
-}
-
-export default WorkSpaceContent
+export default WorkSpaceContent;

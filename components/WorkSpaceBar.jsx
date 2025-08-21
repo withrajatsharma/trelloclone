@@ -27,7 +27,7 @@ const WorkSpaceBar = ({ workspaces }) => {
   const handleTabClick = (workspaceId, tab) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("workspace", workspaceId);
-    tab === "members" && params.set("tab", tab);
+    tab === "members" ? params.set("tab", tab) : params.delete("tab");
     router.replace(`?${params.toString()}`, { scroll: false });
   };
 

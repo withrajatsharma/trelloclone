@@ -17,7 +17,8 @@ import WorkSpaceMain from "@/components/WorkSpaceMain";
 //     )
 // );
 
-const page = () => {
+const page = async({searchParams}) => {
+
   return (
     <main className="w-full flex items-start pt-5 md:px-8 gap-10 ">
       <Suspense
@@ -47,7 +48,7 @@ const page = () => {
 
       <Suspense
         fallback={
-          <section className=" w-full  ">
+          <section className=" w-[70%]  ">
             <div className="flex justify-between items-center w-full gap-5">
               <div className="flex items-center gap-5 pl-10 relative w-fit pb-10 animate-pulse">
                 <FolderKanban size={50} />
@@ -72,7 +73,7 @@ const page = () => {
           </section>
         }
       >
-        <WorkSpaceMain />
+        <WorkSpaceMain searchParams={searchParams}  />
       </Suspense>
     </main>
   );
