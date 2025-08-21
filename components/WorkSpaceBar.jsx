@@ -1,8 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, FolderKanban, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "./Button";
+import LoadingButton from "./LoadingButton";
+import axios from "axios";
+import { customToast } from "./CustomToast";
 
 const WorkSpaceBar = ({ workspaces }) => {
   const searchParams = useSearchParams();
@@ -10,6 +13,8 @@ const WorkSpaceBar = ({ workspaces }) => {
 
   const selectedWorkspace = searchParams.get("workspace") || null;
   const selectedTab = searchParams.get("tab") || "boards";
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleWorkspaceClick = (id) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -29,14 +34,45 @@ const WorkSpaceBar = ({ workspaces }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
 
-  const handleSaveWorkspace = () => {
-    if (!newWorkspaceName.trim()) return;
-    console.log("Workspace saved:", newWorkspaceName);
-    setNewWorkspaceName("");
-    setIsModalOpen(false);
+  const handleSaveWorkspace = async () => {
+    if (!newWorkspaceName.trim()) {
+      customToast.error("Please enter a workspace name.");
+      return;
+    }
+
+    if (isLoading) return;
+
+    setIsLoading(true);
+
+    try {
+      const res = await axios.post("/api/workspace", {
+        name: newWorkspaceName.toLowerCase().trim(),
+      });
+
+      if (res && res?.data && res?.data?.success) {
+        customToast.success(
+          res?.data?.message || "Workspace created successfully!"
+        );
+        setNewWorkspaceName("");
+        setIsModalOpen(false);
+        handleWorkspaceClick(res.data.workspace.id);
+      } else {
+        customToast.error(res?.data?.message || "Failed to create workspace.");
+      }
+    } catch (error) {
+      console.log("Error saving workspace:", error?.message);
+      console.log(`error :`, error?.response);
+      customToast.error(
+        error?.response?.data?.message ||
+          "Please try again. (workspace creation error)"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCancel = () => {
+    if (isLoading) return;
     setNewWorkspaceName("");
     setIsModalOpen(false);
   };
@@ -44,23 +80,24 @@ const WorkSpaceBar = ({ workspaces }) => {
   const clearInput = () => setNewWorkspaceName("");
 
   return (
-    <aside className="w-[25%] border-t-2 mt-10 px-2">
+    <aside className="w-[30%] border-t-2 mt-10 px-2">
       <Button onClick={() => setIsModalOpen(true)} className="my-4">
         Add Workspace
       </Button>
 
-      {workspaces.map((workspace) => {
-        const isExpanded = selectedWorkspace === String(workspace.id);
+<div className="h-[60vh] hide-scrollbar overflow-auto">
+   {workspaces?.map((workspace) => {
+        const isExpanded = selectedWorkspace === String(workspace?._id);
 
         return (
-          <div key={workspace.id} className="mb-3">
+          <div key={workspace?._id} className="mb-3">
             <button
-              onClick={() => handleWorkspaceClick(workspace.id)}
+              onClick={() => handleWorkspaceClick(workspace?._id)}
               className="flex items-center justify-between w-full font-semibold p-2 rounded hover:bg-gray-100 hover:pl-5 transition-all"
             >
-              <div className="flex items-center gap-2 leading-none">
+              <div className="flex items-center gap-2  text-left ">
                 <FolderKanban />
-                <span>{workspace.name}</span>
+                <span className="line-clamp-1">{workspace.name}</span>
               </div>
               {isExpanded ? (
                 <ChevronDown size={18} />
@@ -72,7 +109,7 @@ const WorkSpaceBar = ({ workspaces }) => {
             {isExpanded && (
               <div className="pl-2 mt-2 space-y-2">
                 <button
-                  onClick={() => handleTabClick(workspace.id, "boards")}
+                  onClick={() => handleTabClick(workspace?._id, "boards")}
                   className={`block w-full text-left p-1 pl-10 rounded ${
                     selectedTab === "boards"
                       ? "bg-gray-200 font-semibold"
@@ -83,7 +120,7 @@ const WorkSpaceBar = ({ workspaces }) => {
                 </button>
 
                 <button
-                  onClick={() => handleTabClick(workspace.id, "members")}
+                  onClick={() => handleTabClick(workspace?._id, "members")}
                   className={`block w-full text-left p-1 pl-10 rounded ${
                     selectedTab === "members"
                       ? "bg-gray-200 font-semibold"
@@ -97,6 +134,10 @@ const WorkSpaceBar = ({ workspaces }) => {
           </div>
         );
       })}
+
+</div>
+
+     
 
       {isModalOpen && (
         <>
@@ -135,12 +176,14 @@ const WorkSpaceBar = ({ workspaces }) => {
                 >
                   Cancel
                 </Button>
-                <Button
+                <LoadingButton
+                  isLoading={isLoading}
+                  loadingText={"saving..."}
                   onClick={handleSaveWorkspace}
-                  className="bg-blue-400 text-white hover:bg-blue-500 !text-sm"
+                  className=" !text-sm"
                 >
                   Save
-                </Button>
+                </LoadingButton>
               </div>
             </div>
           </div>

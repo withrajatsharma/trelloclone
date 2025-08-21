@@ -8,7 +8,7 @@ export default async function Layout({ children, searchParams }) {
   const searchQuery = params?.search || "";
 
   return (
-    <>
+    <main className="h-screen overflow-hidden">
       <header className="select-none px-4">
         <nav className="px-0 sm:px-6 pb-2 md:pb-0 pt-4 xl:pt-7 flex items-center justify-between">
           <Link
@@ -34,6 +34,6 @@ export default async function Layout({ children, searchParams }) {
       </header>
 
       {children}
-    </>
+    </main>
   );
 }
