@@ -7,6 +7,7 @@ import { CSS } from "@dnd-kit/utilities";
 function CardItem({ card, deleteCard, updateCard }) {
   const [mouseIsOver, setMouseIsOver] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const[cardName, setCardName] = useState(card.title);
 
   const {
     setNodeRef,
@@ -30,6 +31,7 @@ function CardItem({ card, deleteCard, updateCard }) {
   };
 
   const toggleEditMode = () => {
+    updateCard(card._id, cardName);
     setEditMode((prev) => !prev);
     setMouseIsOver(false);
   };
@@ -55,7 +57,7 @@ function CardItem({ card, deleteCard, updateCard }) {
       >
         <textarea
           className="h-[90%] text-black w-full resize-none border-none rounded bg-transparent  focus:outline-none"
-          value={card.title}
+          value={cardName}
           autoFocus
           placeholder="Card content here"
           onBlur={toggleEditMode}
@@ -64,7 +66,7 @@ function CardItem({ card, deleteCard, updateCard }) {
               toggleEditMode();
             }
           }}
-          onChange={(e) => updateCard(card._id, e.target.value)}
+          onChange={(e) => setCardName(e.target.value)}
         />
       </div>
     );
@@ -85,7 +87,7 @@ function CardItem({ card, deleteCard, updateCard }) {
         setMouseIsOver(false);
       }}
     >
-      <p className="my-auto h-[90%] w-full ">{card.title}</p>
+      <p className="my-auto h-[90%] w-full ">{cardName}</p>
 
       {mouseIsOver && (
         <button
