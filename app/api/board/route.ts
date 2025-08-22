@@ -113,3 +113,138 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function PATCH(req: Request) {
+  try {
+    await connectToDB();
+    const { name, boardId } = await req.json();
+    const trimmedName = (name || "").trim().toLowerCase();
+
+    if (!trimmedName) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Please provide a board name.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!boardId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Please provide a board ID.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const user = await verifyToken();
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unauthorized. Please log in.",
+        },
+        { status: 401 }
+      );
+    }
+
+    const userId = new mongoose.Types.ObjectId(user?.id);
+
+    const board = await Board.findById(boardId);
+
+    if (!board) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Board not found.",
+        },
+        { status: 404 }
+      );
+    }
+
+    const workspace = await WorkSpace.findById(board?.workSpaceId);
+
+    if (!workspace) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Workspace not found.",
+        },
+        { status: 404 }
+      );
+    }
+
+    if (!workspace.ownerId.equals(userId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "You can only update boards in workspaces you own.",
+        },
+        { status: 403 }
+      );
+    }
+
+    const existingBoard = await Board.findOne({
+      name: trimmedName,
+      workspaceId: board.workspaceId,
+    });
+
+    if (existingBoard) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "A board with this name already exists in this workspace.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const updatedBoard = await Board.findByIdAndUpdate(
+      boardId,
+      {
+        name: trimmedName,
+      },
+      { new: true }
+    );
+
+    if (!updatedBoard) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Failed to update board.",
+        },
+        { status: 400 }
+      );
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/dashboard?workspace=${board.workspaceId}`);
+    revalidatePath("/dashboard", "layout");
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Board updated successfully.",
+        board: {
+          id: updatedBoard._id,
+          name: updatedBoard.name,
+          workspaceId: updatedBoard.workspaceId,
+        },
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("[BOARD_UPDATE_API] : ", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to update Board. (error)",
+      },
+      { status: 500 }
+    );
+  }
+}

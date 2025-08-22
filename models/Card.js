@@ -7,13 +7,8 @@ const CardSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    description: {
-      type: String,
-      trim: true,
-      maxlength: [1000, "Card description cannot exceed 1000 characters"],
-    },
     listId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "List",
       required: [true, "List ID is required"],
     },
@@ -29,5 +24,4 @@ const CardSchema = new mongoose.Schema(
 );
 CardSchema.index({ listId: 1, position: 1 });
 
-export default mongoose.models.Card ||
-  mongoose.model < ICard > ("Card", CardSchema);
+export const Card = mongoose.models.Card || mongoose.model("Card", CardSchema);

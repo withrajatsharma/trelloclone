@@ -25,7 +25,6 @@ const WorkSpaceContent = ({ workSpace }) => {
 
 
 
-
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
@@ -53,6 +52,7 @@ const WorkSpaceContent = ({ workSpace }) => {
         customToast.success(
           res?.data?.message || "Board created successfully!"
         );
+        router.refresh();
         setNewBoardName("");
         setIsModalOpen(false);
         // handleBoardClick(res.data.workspace.id);
