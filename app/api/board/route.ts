@@ -6,6 +6,8 @@ import { WorkSpace } from "@/models/Workspace";
 import { Board } from "@/models/Board";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { List } from "@/models/List";
+import { broadcastActivity } from "@/services/realtime";
+import { Activity } from "@/models/Activity";
 
 export async function POST(req: Request) {
   try {
@@ -220,6 +222,18 @@ export async function PATCH(req: Request) {
         { status: 400 }
       );
     }
+
+    // Log activity for board update
+    try {
+      await Activity.create({
+        boardId: boardId,
+        userId: user.id,
+        userFullName: user.fullName,
+        action: "board.updated",
+        details: { name: trimmedName }
+      });
+      broadcastActivity(boardId.toString(), user.id, user.fullName, "board.updated", { name: trimmedName });
+    } catch {}
 
     revalidatePath("/dashboard");
     revalidatePath(`/dashboard?workspace=${board.workspaceId}`);

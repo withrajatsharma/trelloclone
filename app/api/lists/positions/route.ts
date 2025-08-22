@@ -1,5 +1,8 @@
 import { List } from "@/models/List";
 import { connectToDB } from "@/services/connectdb";
+import { broadcastListPositions, broadcastActivity } from "@/services/realtime";
+import { Activity } from "@/models/Activity";
+import verifyToken from "../../verifyToken";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(request: NextRequest) {
@@ -7,6 +10,14 @@ export async function PATCH(request: NextRequest) {
     await connectToDB();
 
     const { boardId, updates } = await request.json();
+
+    const user = await verifyToken();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Please log in." },
+        { status: 401 }
+      );
+    }
 
     if (!boardId || !updates || !Array.isArray(updates)) {
       return NextResponse.json(
@@ -20,6 +31,22 @@ export async function PATCH(request: NextRequest) {
     );
 
     await Promise.all(updatePromises);
+
+    try {
+      // Log activity for list movement
+      await Activity.create({
+        boardId,
+        userId: user.id,
+        userFullName: user.fullName,
+        action: "list.moved",
+        details: { listCount: updates.length }
+      });
+      broadcastActivity(boardId.toString(), user.id, user.fullName, "list.moved", { listCount: updates.length });
+      broadcastListPositions(
+        boardId.toString(),
+        updates.map((u: any) => ({ id: u.id, position: u.position }))
+      );
+    } catch {}
 
     return NextResponse.json({
       success: true,

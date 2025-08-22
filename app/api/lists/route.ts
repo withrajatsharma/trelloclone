@@ -6,6 +6,8 @@ import { Board } from "@/models/Board";
 import { List } from "@/models/List";
 import mongoose from "mongoose";
 import { Card } from "@/models/Card";
+import { broadcastListCreated, broadcastListDeleted, broadcastListUpdated, broadcastActivity } from "@/services/realtime";
+import { Activity } from "@/models/Activity";
 
 export async function POST(req: Request) {
   try {
@@ -73,6 +75,19 @@ export async function POST(req: Request) {
       boardId,
       position: position || 0,
     });
+
+    // Log activity and broadcast
+    try {
+      await Activity.create({
+        boardId,
+        userId: user.id,
+        userFullName: user.fullName,
+        action: "list.created",
+        details: { name: trimmedName }
+      });
+      broadcastActivity(board._id.toString(), user.id, user.fullName, "list.created", { name: trimmedName });
+      broadcastListCreated(board._id.toString(), list);
+    } catch {}
 
     return NextResponse.json(
       { success: true, message: "List created successfully.", list },
@@ -152,6 +167,18 @@ export async function DELETE(req: Request) {
     await List.deleteOne({ _id: id });
 
     await   Card.deleteMany({ listId: id });
+
+    try {
+      await Activity.create({
+        boardId: board._id,
+        userId: user.id,
+        userFullName: user.fullName,
+        action: "list.deleted",
+        details: { listId: id }
+      });
+      broadcastActivity(board._id.toString(), user.id, user.fullName, "list.deleted", { listId: id });
+      broadcastListDeleted(board._id.toString(), id);
+    } catch {}
 
     return NextResponse.json(
       { success: true, message: "List deleted successfully." },
@@ -249,6 +276,20 @@ export async function PATCH(req: Request) {
         { success: false, message: "Failed to update list." },
         { status: 400 }
       );
+    }
+
+    if (list) {
+      try {
+        await Activity.create({
+          boardId: board._id,
+          userId: user.id,
+          userFullName: user.fullName,
+          action: "list.updated",
+          details: { name: trimmedName }
+        });
+        broadcastActivity(board._id.toString(), user.id, user.fullName, "list.updated", { name: trimmedName });
+        broadcastListUpdated(board._id.toString(), list);
+      } catch {}
     }
 
     return NextResponse.json(

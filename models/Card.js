@@ -17,6 +17,13 @@ const CardSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
+    authorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    description: { type: String, default: "" },
+    dueDate: { type: Date },
+    priority: { type: String, enum: ["low", "medium", "high"], default: "medium" },
   },
   {
     timestamps: true,

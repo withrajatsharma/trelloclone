@@ -13,12 +13,12 @@ const BoardSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    members: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
+    // members: [
+    //   {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "User",
+    //   },
+    // ],
   },
   {
     timestamps: true,

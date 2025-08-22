@@ -6,12 +6,14 @@ import { Board } from "@/models/Board";
 import { List } from "@/models/List";
 import mongoose from "mongoose";
 import { Card } from "@/models/Card";
+import { broadcastCardCreated, broadcastCardDeleted, broadcastCardUpdated, broadcastActivity } from "@/services/realtime";
+import { Activity } from "@/models/Activity";
 
 export async function POST(req: Request) {
   try {
     await connectToDB();
 
-    const { title, listId, position } = await req.json();
+    const { title, listId, position, description, dueDate, priority } = await req.json();
     const trimmedName = (title || "").trim();
 
     if (!trimmedName) {
@@ -81,7 +83,23 @@ export async function POST(req: Request) {
       title: trimmedName,
       listId,
       position: position || 0,
+      authorId: userId,
+      description: description || "",
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+      priority: priority || "medium",
     });
+
+    try {
+      await Activity.create({
+        boardId: board._id,
+        userId: user.id,
+        userFullName: user.fullName,
+        action: "card.created",
+        details: { title: trimmedName }
+      });
+      broadcastActivity(board._id.toString(), user.id, user.fullName, "card.created", { title: trimmedName });
+      broadcastCardCreated(board._id.toString(), card);
+    } catch {}
 
     return NextResponse.json(
       { success: true, message: "Card created successfully.", card },
@@ -160,6 +178,18 @@ export async function DELETE(req: Request) {
 
     await Card.deleteOne({ _id: id });
 
+    try {
+      await Activity.create({
+        boardId: board._id,
+        userId: user.id,
+        userFullName: user.fullName,
+        action: "card.deleted",
+        details: { cardId: id }
+      });
+      broadcastActivity(board._id.toString(), user.id, user.fullName, "card.deleted", { cardId: id });
+      broadcastCardDeleted(board._id.toString(), id);
+    } catch {}
+
     return NextResponse.json(
       { success: true, message: "Card deleted successfully." },
       { status: 200 }
@@ -177,15 +207,8 @@ export async function PATCH(req: Request) {
   try {
     await connectToDB();
 
-    const { id, title } = await req.json();
+    const { id, title, description, dueDate, priority } = await req.json();
     const trimmedTitle = (title || "").trim();
-
-    if (!trimmedTitle) {
-      return NextResponse.json(
-        { success: false, message: "Please provide a card title." },
-        { status: 400 }
-      );
-    }
 
     if (!id) {
       return NextResponse.json(
@@ -236,11 +259,27 @@ export async function PATCH(req: Request) {
       );
     }
 
-    card.title = trimmedTitle;
-    await card.save(); // wait for DB update
+    if (trimmedTitle) card.title = trimmedTitle;
+    if (typeof description === 'string') card.description = description;
+    if (dueDate !== undefined) card.dueDate = dueDate ? new Date(dueDate) : undefined;
+    if (priority) card.priority = priority;
+    await card.save();
+
+    try {
+      await Activity.create({
+        boardId: card.listId.boardId._id || card.listId.boardId,
+        userId: user.id,
+        userFullName: user.fullName,
+        action: "card.updated",
+        details: { title: card.title }
+      });
+      const boardId = (card.listId.boardId._id || card.listId.boardId).toString();
+      broadcastActivity(boardId, user.id, user.fullName, "card.updated", { title: card.title });
+      broadcastCardUpdated(boardId, id, card.title);
+    } catch {}
 
     return NextResponse.json(
-      { success: true, message: "Card updated successfully." },
+      { success: true, message: "Card updated successfully.", card },
       { status: 200 }
     );
   } catch (error) {

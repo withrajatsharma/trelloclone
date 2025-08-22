@@ -1,7 +1,7 @@
 "use client";
+import { useMemo, useState } from "react";
 import { SortableContext, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useMemo, useState } from "react";
 import { Trash, Plus } from "lucide-react";
 import CardItem from "./card-item";
 
@@ -13,6 +13,8 @@ function ListContainer({
   deleteCard,
   updateCard,
   cards,
+  boardId,
+  onCardUpdated,
 }) {
   const [editMode, setEditMode] = useState(false);
   const [listName, setListName] = useState(list.name);
@@ -57,6 +59,8 @@ function ListContainer({
       ref={setNodeRef}
       style={style}
       className="  w-[300px]  h-[600px] bg-white border-gray-200 border-2 rounded-md flex flex-col p-2"
+      data-type="list"
+      data-id={list._id}
     >
       {/* List header */}
       <div
@@ -107,6 +111,7 @@ function ListContainer({
               card={card}
               deleteCard={deleteCard}
               updateCard={updateCard}
+              boardId={boardId}
             />
           ))}
         </SortableContext>

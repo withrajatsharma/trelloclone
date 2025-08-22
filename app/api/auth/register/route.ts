@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 import { WorkSpace } from "@/models/Workspace";
 import { revalidateTag } from "next/cache";
+import { Board } from "@/models/Board";
+import { List } from "@/models/List";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
 
@@ -66,6 +68,17 @@ export async function POST(req: Request) {
       ownerId: createdUser._id,
       members: [createdUser._id],
     });
+
+    const board = await Board.create({
+      name: "trello board",
+      workSpaceId: workspace._id,
+    });
+
+    await List.create([
+      { name: "Backlog", boardId: board._id, position: 0 },
+      { name: "In Progress", boardId: board._id, position: 1 },
+      { name: "Done", boardId: board._id, position: 2 },
+    ]);
 
     revalidateTag(`workspace-${createdUser._id}`);
 
