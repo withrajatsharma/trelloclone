@@ -3,6 +3,8 @@ import { connectToDB } from "@/services/connectdb";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
+import { WorkSpace } from "@/models/Workspace";
+import { revalidateTag } from "next/cache";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
 
@@ -54,15 +56,31 @@ export async function POST(req: Request) {
       .setExpirationTime("1d")
       .sign(JWT_SECRET);
 
-    const res = NextResponse.json({
-      success: true,
-      message: "Registration successful.",
-      user: {
-        id: createdUser._id.toString(),
-        email: createdUser.email,
-        fullName: createdUser.fullName,
+    await WorkSpace.create({
+      name: "Trello WorkSpace",
+      ownerId: createdUser._id,
+    });
+
+    const workspace = await WorkSpace.create({
+      name: "trello workspace",
+      ownerId: createdUser._id,
+      members: [createdUser._id],
+    });
+
+    revalidateTag(`workspace-${createdUser._id}`);
+
+    const res = NextResponse.json(
+      {
+        success: true,
+        message: "Registration successful.",
+        user: {
+          id: createdUser._id.toString(),
+          email: createdUser.email,
+          fullName: createdUser.fullName,
+        },
       },
-    },{status: 200});
+      { status: 200 }
+    );
 
     res.cookies.set("token", token, {
       httpOnly: true,

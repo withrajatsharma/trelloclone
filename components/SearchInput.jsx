@@ -47,7 +47,7 @@ export default function SearchInput({
       if (trimmed === "") params.delete("search");
       else {
         params.set("search", trimmed);
-
+        params.delete("tab")
         params.delete("workspace");
       }
 

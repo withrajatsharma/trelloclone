@@ -1,5 +1,5 @@
 "use client";
-import { Edit, FolderKanban, Plus, Save, Trash, X } from "lucide-react";
+import { Crown, Edit, FolderKanban, Plus, Save, Trash, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import Button from "./Button";
 import LoadingButton from "./LoadingButton";
@@ -8,13 +8,11 @@ import axios from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-const WorkSpaceContent = ({ workSpace }) => {
-
+const WorkSpaceContent = ({ workSpace, currUserId }) => {
   const params = useSearchParams();
 
   const workSpaceId = params.get("workspace") || "";
   const tab = params.get("tab") || "boards";
-
 
   const [isEditing, setIsEditing] = useState(false);
 
@@ -23,14 +21,14 @@ const WorkSpaceContent = ({ workSpace }) => {
     setName(workSpace?.name || "");
   }, [workSpace, workSpaceId]);
 
-
-
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
+  const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+  const [memberEmail, setMemberEmail] = useState("");
 
   const handelSaveBoard = async () => {
     if (!newBoardName.trim()) {
@@ -71,11 +69,81 @@ const WorkSpaceContent = ({ workSpace }) => {
     }
   };
 
+  const handleInviteMember = async () => {
+    if (!memberEmail.trim()) {
+      customToast.error("Please enter a member email.");
+      return;
+    }
 
-    const handleSave = async() => {
+    if (isLoading) return;
+
+    setIsLoading(true);
+
+    try {
+      const res = await axios.post("/api/workspace/member", {
+        email: memberEmail.toLowerCase().trim(),
+        workSpaceId: workSpaceId,
+      });
+
+      if (res && res?.data && res?.data?.success) {
+        customToast.success(
+          res?.data?.message || "Member invited successfully!"
+        );
+        router.refresh();
+        setMemberEmail("");
+        setIsMemberModalOpen(false);
+      } else {
+        customToast.error(res?.data?.message || "Failed to invite member.");
+      }
+    } catch (error) {
+      console.log("Error inviting member:", error?.message);
+      console.log(`error :`, error?.response);
+      customToast.error(
+        error?.response?.data?.message ||
+          "Please try again. (Member invitation error)"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId) => {
+    if (isLoading) return;
+
+    setIsLoading(true);
+
+    try {
+      const res = await axios.delete("/api/workspace/member", {
+        data: {
+          memberId: memberId,
+          workSpaceId: workSpaceId,
+        },
+      });
+
+      if (res && res?.data && res?.data?.success) {
+        customToast.success(
+          res?.data?.message || "Member removed successfully!"
+        );
+        router.refresh();
+      } else {
+        customToast.error(res?.data?.message || "Failed to remove member.");
+      }
+    } catch (error) {
+      console.log("Error removing member:", error?.message);
+      console.log(`error :`, error?.response);
+      customToast.error(
+        error?.response?.data?.message ||
+          "Please try again. (Member removal error)"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
     if (name.trim() === "" || name.trim() === workSpace?.name) return;
 
-    if(isLoading) return;
+    if (isLoading) return;
 
     setIsLoading(true);
 
@@ -95,7 +163,7 @@ const WorkSpaceContent = ({ workSpace }) => {
         customToast.error(res?.data?.message || "Failed to update Workspace.");
       }
     } catch (error) {
-     setIsEditing(false);
+      setIsEditing(false);
       setName(workSpace?.name || "");
       console.log("Error updating Workspace:", error?.message);
       console.log(`error :`, error?.response);
@@ -104,22 +172,24 @@ const WorkSpaceContent = ({ workSpace }) => {
           "Please try again. (Workspace update error)"
       );
     } finally {
-             
       setIsLoading(false);
     }
-      
   };
-
-    
-
 
   const handleCancel = () => {
     if (isLoading) return;
     setNewBoardName("");
     setIsModalOpen(false);
+    setMemberEmail("");
+    setIsMemberModalOpen(false);
   };
 
-  const clearInput = () => setNewBoardName("");
+  const clearInput = () => {
+    setNewBoardName("");
+    setMemberEmail("");
+  };
+
+  const isOwner = currUserId === workSpace?.ownerId;
 
   return (
     <section className=" w-[70%]  ">
@@ -134,7 +204,7 @@ const WorkSpaceContent = ({ workSpace }) => {
         <div className="flex items-center gap-5 pl-10 w-fit relative ">
           <FolderKanban size={50} />
 
-          {isEditing ? (
+          {isOwner && isEditing ? (
             <input
               className="text-h2 font-semibold border-none outline-none underline "
               value={name}
@@ -147,20 +217,22 @@ const WorkSpaceContent = ({ workSpace }) => {
             <h1 className="text-h2 ">{name}</h1>
           )}
 
-          {!isEditing ? (
+          {isOwner && !isEditing ? (
             <Edit
               className="absolute -right-8 top-2 cursor-pointer"
               size={20}
               onClick={() => setIsEditing(true)}
             />
-          ) : (
+          ) : isOwner && isEditing ? (
             <div>
               {isLoading ? (
                 <div className="h-5 w-5 border-2 border-black border-t-transparent rounded-full mr-2 animate-spin" />
               ) : (
                 <Save
                   onClick={handleSave}
-                className=" cursor-pointer text-green-500" size={30} />
+                  className=" cursor-pointer text-green-500"
+                  size={30}
+                />
               )}
 
               <X
@@ -168,13 +240,12 @@ const WorkSpaceContent = ({ workSpace }) => {
                 size={30}
                 onClick={() => {
                   setIsEditing(false);
-                  setName("Testing");
+                  setName(workSpace?.name || "");
                 }}
               />
             </div>
-          )}
+          ) : null}
         </div>
-
         {/* <LoadingButton
           isLoading={isLoading}
           loadingText={"deleting..."}
@@ -185,13 +256,24 @@ const WorkSpaceContent = ({ workSpace }) => {
         </LoadingButton> */}
       </div>
 
-      {tab !== "members"? (
+      {tab !== "members" ? (
         <div
           className={
             "grid gap-4 transition-all duration-300 grid-cols-2 md:grid-cols-3 xl:grid-cols-4 w-full  h-[75vh] overflow-auto pb-20 hide-scrollbar"
           }
         >
-          <div
+          {isOwner && (
+            <div
+              onClick={() => setIsModalOpen(true)}
+              className="flex cursor-pointer flex-col gap-4 p-4 h-32 w-full rounded-lg bg-gray-200 hover:bg-gray-300 transition-all duration-300"
+            >
+              <div className="flex flex-col gap-2 items-center justify-center w-full h-full">
+                <Plus />
+                <span>Create New Board</span>
+              </div>
+            </div>
+          )}
+          {/* <div
             onClick={() => setIsModalOpen(true)}
             className="flex cursor-pointer flex-col gap-4 p-4 h-32 w-full rounded-lg bg-gray-200 hover:bg-gray-300 transition-all duration-300"
           >
@@ -199,7 +281,7 @@ const WorkSpaceContent = ({ workSpace }) => {
               <Plus />
               <span>Create New Board</span>
             </div>
-          </div>
+          </div> */}
 
           {workSpace?.boards?.map((board, i) => (
             <Link
@@ -213,25 +295,23 @@ const WorkSpaceContent = ({ workSpace }) => {
             </Link>
           ))}
         </div>
-      ):
-      
-
-      <div
+      ) : (
+        <div
           className={
-            " w-full  h-[75vh] overflow-auto pb-20 hide-scrollbar"
+            " w-full flex flex-col gap-4  h-[75vh] overflow-auto pb-20 hide-scrollbar"
           }
         >
-
-           <div
-            onClick={() => setIsModalOpen(true)}
-            className="flex cursor-pointer flex-col h-10 gap-4 p-4 mb-4  w-full rounded-lg bg-gray-200 hover:bg-gray-300 transition-all duration-300"
-          >
-            <div className="flex  gap-2 items-center justify-center w-full h-full">
-              <Plus />
-              <span>Invite Member</span>
+          {isOwner && (
+            <div
+              onClick={() => setIsMemberModalOpen(true)}
+              className="flex cursor-pointer flex-col h-10 gap-4 p-4   w-full rounded-lg bg-gray-200 hover:bg-gray-300 transition-all duration-300"
+            >
+              <div className="flex  gap-2 items-center justify-center w-full h-full">
+                <Plus />
+                <span>Invite Member</span>
+              </div>
             </div>
-          </div>
-         
+          )}
 
           {workSpace?.members?.map((member, i) => (
             <div
@@ -240,14 +320,77 @@ const WorkSpaceContent = ({ workSpace }) => {
             >
               <div className="flex items-center justify-between h-full">
                 <p>{member.fullName}</p>
-                {member?._id !== workSpace?.ownerId && <Trash size={20} className="text-red-400 cursor-pointer" />}
+                {isOwner
+                  ? member?._id !== workSpace?.ownerId && (
+                      <Trash
+                        onClick={() => handleRemoveMember(member._id)}
+                        size={20}
+                        className="text-red-400 cursor-pointer"
+                      />
+                    )
+                  : member?._id === workSpace?.ownerId && (
+                      <Crown
+                        onClick={() => handleRemoveMember(member._id)}
+                        size={20}
+                        className="text-yellow-500 cursor-pointer"
+                      />
+                    )}
               </div>
             </div>
           ))}
         </div>
+      )}
 
+      {isMemberModalOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center "
+            onClick={handleCancel}
+          >
+            <div
+              className="bg-white rounded-lg p-6 w-[90%] md:w-[30%] relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-lg font-semibold mb-4">Add Member</h2>
 
-      }
+              <div className="relative mb-4">
+                <input
+                  type="email"
+                  placeholder="Member Email"
+                  value={memberEmail}
+                  onChange={(e) => setMemberEmail(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                {memberEmail && (
+                  <button
+                    onClick={clearInput}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  onClick={handleCancel}
+                  className="bg-gray-200 text-black hover:bg-gray-300 !text-sm"
+                >
+                  Cancel
+                </Button>
+                <LoadingButton
+                  isLoading={isLoading}
+                  loadingText={"inviting..."}
+                  onClick={handleInviteMember}
+                  className=" !text-sm"
+                >
+                  Save
+                </LoadingButton>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {isModalOpen && (
         <>

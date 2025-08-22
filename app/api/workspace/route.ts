@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       members: [userId],
     });
 
-    revalidateTag("workspaces");
+    revalidateTag(`workspace-${user.id}`);
 
     const board = await Board.create({
       name: "Trello Board",

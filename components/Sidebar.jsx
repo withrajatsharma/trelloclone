@@ -13,7 +13,7 @@ const Sidebar = async () => {
 
   const cachedFunction = unstable_cache(
     () => getUserWorkspaces(userId),
-    [`workspaces`],
+    [`workspaces-${userId}`],
     {
       revalidate: 3600,
       tags: ["workspaces",`user-workspaces-${userId}`],
