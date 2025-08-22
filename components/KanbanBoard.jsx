@@ -472,10 +472,7 @@ const KanbanBoard = ({ serializedBoard }) => {
     }
   }
 
-  /**
-   * Real-time updates via Server-Sent Events (SSE)
-   * Listens for changes from other users and updates local state
-   */
+  
   useEffect(() => {
     if (!board?._id) return;
     
@@ -783,10 +780,7 @@ const KanbanBoard = ({ serializedBoard }) => {
   );
 };
 
-/**
- * Generate unique IDs for optimistic updates
- * Uses crypto.randomUUID() for collision resistance
- */
+
 function generateId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
